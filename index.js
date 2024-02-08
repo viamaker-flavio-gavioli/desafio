@@ -21,7 +21,7 @@ async function main() {
 
     app.get('/produtos', async (req, res) => {
         try {
-            const result = await pg.query('SELECT * FROM produtos ORDER BY id');
+            const result = await pg.query('SELECT * FROM produtos order by id');
             const produtos = result.rows;
 
             res.json(produtos);
@@ -35,16 +35,31 @@ async function main() {
         const { nome, preco, imagem } = req.body;
 
         try {
-            // Converte o preço para um número antes de inserir no banco de dados
-            const precoNumerico = parseFloat(preco);
-
-            const result = await pg.query('INSERT INTO produtos (nome, preco, imagem) VALUES ($1, $2, $3) RETURNING *', [nome, precoNumerico, imagem]);
+            const result = await pg.query('INSERT INTO produtos (nome, preco, imagem) VALUES ($1, $2, $3) RETURNING *', [nome, preco, imagem]);
             const novoProduto = result.rows[0];
             
             res.status(201).json(novoProduto);
         } catch (error) {
             console.error('Erro ao adicionar produto ao banco de dados:', error);
             res.status(500).json({ error: 'Erro ao adicionar produto ao banco de dados' });
+        }
+    });
+
+    app.delete('/produtos/:id', async (req, res) => {
+        const { id } = req.params;
+
+        try {
+            const result = await pg.query('DELETE FROM produtos WHERE id = $1 RETURNING *', [id]);
+            const deletedProduto = result.rows[0];
+
+            if (!deletedProduto) {
+                res.status(404).json({ error: 'Produto não encontrado' });
+            } else {
+                res.json({ message: 'Produto excluído com sucesso', deletedProduto });
+            }
+        } catch (error) {
+            console.error('Erro ao excluir produto do banco de dados:', error);
+            res.status(500).json({ error: 'Erro ao excluir produto do banco de dados' });
         }
     });
 
